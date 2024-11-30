@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "fmripost-template"
 description = 'A template tool for postprocessing fMRIPrep derivatives'
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 keywords = []
