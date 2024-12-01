@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Command-line interface modules for fMRIPost-template."""
+
 from . import (
     parser,
     run,
