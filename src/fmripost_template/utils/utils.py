@@ -205,4 +205,8 @@ def get_transforms(source, target, local_transforms=None):
     selected_transforms = [all_transforms[i] for i in path]
     selected_inversions = [inversions[i] for i in path]
 
+    for selected_transform in selected_transforms:
+        if 'templateflow' in selected_transform:
+            tflow.get(selected_transform)
+
     return selected_transforms, selected_inversions
