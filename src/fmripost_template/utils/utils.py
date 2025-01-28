@@ -70,3 +70,99 @@ def update_dict(orig_dict, new_dict):
             updated_dict[key] = value
 
     return updated_dict
+
+
+def find_shortest_path(space_pairs, start, end):
+    """Find the shortest path between two spaces in a list of space pairs.
+
+    Parameters
+    ----------
+    space_pairs : list of tuples
+        List of tuples where each tuple contains two spaces of the form (from, to).
+    start : str
+        The starting space.
+    end : str
+        The ending space.
+
+    Returns
+    -------
+    list
+        List of indices that represent the shortest path between the two spaces.
+
+    Raises
+    ------
+    ValueError
+        If no path exists between the two spaces.
+
+    Examples
+    --------
+    >>> space_pairs = [("a", "b"), ("a", "c"), ("b", "d"), ("c", "d")]
+    >>> find_shortest_path(space_pairs, "a", "d")
+    [0, 2]
+    """
+    from collections import deque
+
+    # Create a graph from the space pairs and keep track of indices
+    graph = {}
+    index_map = {}
+    for index, (src, dst) in enumerate(space_pairs):
+        if src not in graph:
+            graph[src] = []
+        graph[src].append(dst)
+        if src not in index_map:
+            index_map[src] = []
+        index_map[src].append(index)
+
+    # Perform BFS to find the shortest path
+    queue = deque([(start, [start], [])])
+    visited = set()
+
+    while queue:
+        current, path, indices = queue.popleft()
+        if current == end:
+            return indices
+        if current not in visited:
+            visited.add(current)
+            for neighbor, idx in zip(
+                graph.get(current, []), index_map.get(current, []), strict=False
+            ):
+                queue.append((neighbor, path + [neighbor], indices + [idx]))
+
+    raise ValueError(f'No path exists between {start} and {end}')
+
+
+def get_transforms(source, target, local_transforms=None):
+    """Get the transforms required to go from source to target space."""
+    import templateflow.api as tflow
+    from bids.layout import Entity, parse_file_entities
+
+    query = [
+        Entity('template', 'tpl-([a-zA-Z0-9]+)'),
+        Entity('from', 'from-([a-zA-Z0-9]+)'),
+    ]
+
+    all_transforms = local_transforms or []
+
+    templates = tflow.get_templates()
+    for template in templates:
+        template_transforms = tflow.get(template, suffix='xfm', extension='h5')
+        if not isinstance(template_transforms, list):
+            template_transforms = [template_transforms]
+        all_transforms += template_transforms
+
+    links = []
+    for transform in all_transforms:
+        entities = parse_file_entities(transform, entities=query)
+        link = (entities['from'], entities['template'])
+        links.append(link)
+
+    path = None
+    try:
+        path = find_shortest_path(links, source, target)
+        print('Shortest path:', path)
+    except ValueError as e:
+        print(e)
+
+    selected_transforms = [all_transforms[i] for i in path]
+
+    return selected_transforms
