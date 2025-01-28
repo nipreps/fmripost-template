@@ -68,25 +68,65 @@ def init_fmripost_template_wf():
     fmripost_template_wf = Workflow(name=f'fmripost_template_{ver.major}_{ver.minor}_wf')
     fmripost_template_wf.base_dir = config.execution.work_dir
 
-    for subject_id in config.execution.participant_label:
-        single_subject_wf = init_single_subject_wf(subject_id)
-
-        single_subject_wf.config['execution']['crashdump_dir'] = str(
-            config.execution.output_dir / f'sub-{subject_id}' / 'log' / config.execution.run_uuid
-        )
-        for node in single_subject_wf._get_all_nodes():
-            node.config = deepcopy(single_subject_wf.config)
-
-        fmripost_template_wf.add_nodes([single_subject_wf])
-
-        # Dump a copy of the config file into the log directory
-        log_dir = (
-            config.execution.output_dir / f'sub-{subject_id}' / 'log' / config.execution.run_uuid
-        )
+    if config.execution.analysis_level == 'group':
+        group_wf = init_group_wf(config.execution.participant_label)
+        log_dir = config.execution.output_dir / 'log' / config.execution.run_uuid
         log_dir.mkdir(exist_ok=True, parents=True)
+
+        group_wf.config['execution']['crashdump_dir'] = str(log_dir)
+        for node in group_wf._get_all_nodes():
+            node.config = deepcopy(group_wf.config)
+
+        fmripost_template_wf.add_nodes([group_wf])
         config.to_filename(log_dir / 'fmripost_template.toml')
 
+    else:
+        for subject_id in config.execution.participant_label:
+            single_subject_wf = init_single_subject_wf(subject_id)
+
+            single_subject_wf.config['execution']['crashdump_dir'] = str(
+                config.execution.output_dir / f'sub-{subject_id}' / 'log' / config.execution.run_uuid
+            )
+            for node in single_subject_wf._get_all_nodes():
+                node.config = deepcopy(single_subject_wf.config)
+
+            fmripost_template_wf.add_nodes([single_subject_wf])
+
+            # Dump a copy of the config file into the log directory
+            log_dir = (
+                config.execution.output_dir / f'sub-{subject_id}' / 'log' / config.execution.run_uuid
+            )
+            log_dir.mkdir(exist_ok=True, parents=True)
+            config.to_filename(log_dir / 'fmripost_template.toml')
+
     return fmripost_template_wf
+
+
+def init_group_wf(subject_ids: list):
+    """Build a group analysis workflow.
+
+    It aggregates measures across subjects in the sample.
+
+    Workflow Graph
+        .. workflow::
+            :graph2use: orig
+            :simple_form: yes
+
+            from fmripost_template.workflows.tests import mock_config
+            from fmripost_template.workflows.base import init_group_wf
+
+            with mock_config():
+                wf = init_group_wf(['01', '02'])
+
+    Parameters
+    ----------
+    subject_ids : :obj:`list`
+        List of subject labels in the sample.
+    """
+    from niworkflows.engine.workflows import LiterateWorkflow as Workflow
+
+    workflow = Workflow(name='group_wf')
+    return workflow
 
 
 def init_single_subject_wf(subject_id: str):

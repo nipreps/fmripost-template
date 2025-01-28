@@ -146,11 +146,8 @@ def _build_parser(**kwargs):
     )
     parser.add_argument(
         'analysis_level',
-        choices=['participant'],
-        help=(
-            "Processing stage to be run, only 'participant' in the case of "
-            'fMRIPost-template (see BIDS-Apps specification).'
-        ),
+        choices=['participant', 'group'],
+        help='Processing stage to be run (see BIDS-Apps specification).',
     )
 
     g_bids = parser.add_argument_group('Options for filtering BIDS queries')
