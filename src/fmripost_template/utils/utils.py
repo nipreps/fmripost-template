@@ -169,7 +169,7 @@ def get_transforms(source, target, local_transforms=None):
     templates = tflow.get_templates()
     tfl_transforms = []
     for template in templates:
-        template_transforms = tflow.get(template, suffix='xfm', extension='h5')
+        template_transforms = tflow.ls(template, suffix='xfm', extension='h5')
         if not isinstance(template_transforms, list):
             template_transforms = [template_transforms]
         tfl_transforms += template_transforms
