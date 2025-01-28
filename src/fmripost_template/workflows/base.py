@@ -125,7 +125,16 @@ def init_group_wf(subject_ids: list):
     """
     from niworkflows.engine.workflows import LiterateWorkflow as Workflow
 
+    from fmripost_template.utils.bids import collect_derivatives
+
     workflow = Workflow(name='group_wf')
+
+    # Collect relevant files from the derivatives dataset
+    group_data = collect_derivatives()
+
+    # Aggregate tabular files and write them out
+    # Create figures
+
     return workflow
 
 
