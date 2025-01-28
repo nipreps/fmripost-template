@@ -155,8 +155,12 @@ def get_transforms(source, target, local_transforms=None):
     ValueError
         If no chain of transforms can link the source and target spaces.
     """
+    from pathlib import Path
+
     import templateflow.api as tflow
     from bids.layout import Entity, parse_file_entities
+
+    from fmripost_template.utils.utils import find_shortest_path, templateflow_get
 
     query = [
         Entity('template', 'tpl-([a-zA-Z0-9+]+)'),
@@ -207,6 +211,40 @@ def get_transforms(source, target, local_transforms=None):
 
     for selected_transform in selected_transforms:
         if 'templateflow' in selected_transform:
-            tflow.get(selected_transform)
+            templateflow_get(Path(selected_transform))
 
     return selected_transforms, selected_inversions
+
+
+def templateflow_get(filepath):
+    """Get a file from templateflow.
+
+    Derived from https://github.com/templateflow/python-client/
+    blob/9be9c3162a54e6c3dff3c544204ff4eb119df1c8/templateflow/api.py#L162-L172
+
+    Parameters
+    ----------
+    filepath : pathlib.Path
+        The path to the file to get.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file is not found in DataLad or S3.
+    """
+    import templateflow.api as tflow
+
+    # Try DataLad first
+    dl_missing = not filepath.isfile()
+    if dl_missing:
+        tflow._datalad_get(filepath)
+        dl_missing.remove(filepath)
+
+    # Fall-back to S3 if some files are still missing
+    s3_missing = filepath.is_file() and filepath.stat().st_size == 0
+    if s3_missing:
+        tflow._s3_get(filepath)
+
+    not_fetched = not filepath.is_file() or filepath.stat().st_size == 0
+    if not_fetched:
+        raise FileNotFoundError(f'Failed to fetch {filepath}')
