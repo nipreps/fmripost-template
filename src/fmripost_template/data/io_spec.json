@@ -149,6 +149,17 @@
                 "suffix": "xfm",
                 "extension": ".h5"
             }
+        },
+        "group": {
+            "test": {
+                "datatype": "func",
+                "statistic": "reho",
+                "suffix": "boldmap",
+                "extension": [
+                    ".nii.gz",
+                    ".nii"
+                ]
+            }
         }
     },
     "entities": [

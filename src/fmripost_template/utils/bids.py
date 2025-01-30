@@ -269,6 +269,47 @@ def collect_derivatives(
     return derivs_cache
 
 
+def collect_group_data(
+    derivatives_dataset: Path | BIDSLayout,
+    entities: dict,
+    spec: dict | None = None,
+    patterns: list[str] | None = None,
+):
+    """Gather group-level data."""
+    if not entities:
+        entities = {}
+
+    _spec = None
+    if spec is None or patterns is None:
+        _spec = json.loads(load_data.readable('io_spec.json').read_text())
+
+        if spec is None:
+            spec = _spec['queries']
+
+        if patterns is None:
+            patterns = _spec['default_path_patterns']
+
+        _spec.pop('queries')
+
+    config = ['bids', 'derivatives']
+    if _spec:
+        config = ['bids', 'derivatives', _spec]
+
+    if not isinstance(derivatives_dataset, BIDSLayout):
+        layout = BIDSLayout(
+            derivatives_dataset,
+            config=config,
+            validate=False,
+        )
+
+    queries = _spec['queries']['group']
+    group_data = {}
+    for name, query in queries.items():
+        group_data[name] = layout.get(return_type='file', **entities, **query)
+
+    return group_data
+
+
 def write_bidsignore(deriv_dir):
     bids_ignore = (
         '*.html',

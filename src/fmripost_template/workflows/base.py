@@ -123,14 +123,31 @@ def init_group_wf(subject_ids: list):
     subject_ids : :obj:`list`
         List of subject labels in the sample.
     """
+    from nipype.interfaces import utility as niu
     from niworkflows.engine.workflows import LiterateWorkflow as Workflow
 
-    from fmripost_template.utils.bids import collect_derivatives
+    from fmripost_template.utils.bids import collect_group_data
 
     workflow = Workflow(name='group_wf')
 
     # Collect relevant files from the derivatives dataset
-    group_data = collect_derivatives()
+    entities = config.execution.bids_filters or {}
+    entities['subject'] = subject_ids
+    group_data = collect_group_data(
+        derivatives_dataset=config.execution.output_dir,
+        entities=entities,
+    )
+
+    fields = list(group_data.keys())
+
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=fields,
+        ),
+        name='inputnode',
+    )
+    for field in fields:
+        setattr(inputnode.inputs, field, group_data[field])
 
     # Aggregate tabular files and write them out
     # Create figures
