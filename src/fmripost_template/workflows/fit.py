@@ -361,7 +361,9 @@ def init_bold_fit_wf(
     # Stage 3: Create coregistration reference
     # Fieldmap correction only happens during fit if this stage is needed
     if not coreg_boldref and target == 'raw':
-        config.loggers.workflow.info('No coregistration boldref found - requiring preprocessed data')
+        config.loggers.workflow.info(
+            'No coregistration boldref found - requiring preprocessed data'
+        )
         target = 'preprocessed'
     else:
         config.loggers.workflow.info('Found coregistration reference - skipping Stage 3')
@@ -375,10 +377,12 @@ def init_bold_fit_wf(
         ])  # fmt:skip
 
     if not boldref2anat_xform and target == 'raw':
-        config.loggers.workflow.info('No coregistration boldref found - requiring preprocessed data')
+        config.loggers.workflow.info(
+            'No coregistration transform found - requiring preprocessed data'
+        )
         target = 'preprocessed'
     else:
-        config.loggers.workflow.info('Found coregistration boldref - skipping Stage 4')
+        config.loggers.workflow.info('Found coregistration transform - skipping Stage 4')
         outputnode.inputs.boldref2anat_xfm = boldref2anat_xform
 
     if target == 'preprocessed' and not bold_preprocessed:
