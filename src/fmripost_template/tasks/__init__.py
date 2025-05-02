@@ -22,6 +22,6 @@
 #
 """Pydra tasks for fMRIPost-template."""
 
-from . import utils, registration
+from . import registration, utils
 
 __all__ = ['utils', 'registration']

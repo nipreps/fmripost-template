@@ -22,9 +22,11 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Useful functions for Pydra Tasks"""
+import os.path as op
+
 
 def split_filename(fname):
-    special_extensions = [".nii.gz", ".tar.gz", ".niml.dset"]
+    special_extensions = ['.nii.gz', '.tar.gz', '.niml.dset']
 
     pth = op.dirname(fname)
     fname = op.basename(fname)
@@ -41,10 +43,10 @@ def split_filename(fname):
 
     return pth, fname, ext
 
-def fname_presuffix(fname, prefix="", suffix="", newpath=None, use_ext=True):
+def fname_presuffix(fname, prefix='', suffix='', newpath=None, use_ext=True):
     pth, fname, ext = split_filename(fname)
     if not use_ext:
-        ext = ""
+        ext = ''
 
     # No need for isdefined: bool(Undefined) evaluates to False
     if newpath:

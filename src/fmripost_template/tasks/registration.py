@@ -1,18 +1,14 @@
+
 import nibabel as nb
 import numpy as np
-import nitransforms as nt
-
+from fileformats.generic import File
+from fileformats.medimage import Nifti1, NiftiGz
 from fmriprep.utils.transforms import load_transforms
-from pydra.utils.typing import MultiInputObj
 from sdcflows.utils.tools import ensure_positive_cosines
 
-from fileformats.generic import File, BinaryFile
-from fileformats.medimage import DicomDir, Nifti1, Nifti, NiftiGz, Bvec, Bval
-# from ...utils.resampling import resample_image
-
-# from ..utils import fname_presuffix
-from .utils import fname_presuffix
 from ..utils.resampling import resample_image
+from .utils import fname_presuffix
+
 
 def resample_image_pydra(
     source_path: Nifti1 | NiftiGz,
@@ -24,14 +20,14 @@ def resample_image_pydra(
     ro_time: float | None = None,
     jacobian: bool = True,
     nthreads: int = 1,
-    transforms_inverse: list[bool] = [False],
+    transforms_inverse: list[bool] = None,
     output_dtype: np.dtype | str | None = 'f4',
     order: int = 3,
     mode: str = 'constant',
     cval: float = 0.0,
     prefilter: bool = True
 ) -> Nifti1 | NiftiGz:
-    """Pydra node for registering a bold series to a defined target space. 
+    """Pydra node for registering a bold series to a defined target space.
 
     Parameters
     ----------
@@ -69,10 +65,10 @@ def resample_image_pydra(
         The BOLD series resampled into the target space
     """
     out_path = fname_presuffix(source_path, suffix='ref', newpath='')
-    
+
     source = nb.load(source_path)
     target = nb.load(target_path)
-    
+
     fieldmap = nb.load(fieldmap_path) if fieldmap_path else None
 
     nvols = source.shape[3] if source.ndim > 3 else 1
@@ -89,8 +85,8 @@ def resample_image_pydra(
         axis_flip = axcodes[pe_axis] in 'LPI'
 
         pe_info = [(pe_axis, -ro_time if (axis_flip ^ pe_flip) else ro_time)] * nvols
-    
-    output = fir.resample_image(
+
+    output = resample_image(
         source=source,
         target=target,
         transforms=transforms,
