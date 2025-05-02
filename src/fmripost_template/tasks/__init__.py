@@ -20,8 +20,8 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""Utility functions for fMRIPost-template."""
+"""Pydra tasks for fMRIPost-template."""
 
-from . import bids, utils
+from . import utils, registration
 
-__all__ = ['bids', 'utils', 'resampling']
+__all__ = ['utils', 'registration']
