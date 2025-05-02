@@ -1,4 +1,3 @@
-
 import nibabel as nb
 import numpy as np
 from fileformats.generic import File
@@ -25,7 +24,7 @@ def resample_image_pydra(
     order: int = 3,
     mode: str = 'constant',
     cval: float = 0.0,
-    prefilter: bool = True
+    prefilter: bool = True,
 ) -> Nifti1 | NiftiGz:
     """Pydra node for registering a bold series to a defined target space.
 
@@ -102,4 +101,3 @@ def resample_image_pydra(
     )
     output.to_filename(out_path)
     return out_path
-

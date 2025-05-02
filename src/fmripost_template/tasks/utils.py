@@ -1,4 +1,3 @@
-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 #
@@ -22,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Useful functions for Pydra Tasks"""
+
 import os.path as op
 
 
@@ -42,6 +42,7 @@ def split_filename(fname):
         fname, ext = op.splitext(fname)
 
     return pth, fname, ext
+
 
 def fname_presuffix(fname, prefix='', suffix='', newpath=None, use_ext=True):
     pth, fname, ext = split_filename(fname)
