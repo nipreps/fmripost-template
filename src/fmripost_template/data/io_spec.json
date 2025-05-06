@@ -148,6 +148,11 @@
                 "desc": null,
                 "suffix": "xfm",
                 "extension": ".h5"
+            },
+            "all_transforms": {
+                "mode": "image",
+                "suffix": "xfm",
+                "extension": [".h5", ".txt"]
             }
         }
     },

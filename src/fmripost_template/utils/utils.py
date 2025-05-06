@@ -70,3 +70,181 @@ def update_dict(orig_dict, new_dict):
             updated_dict[key] = value
 
     return updated_dict
+
+
+def find_shortest_path(space_pairs, start, end):
+    """Find the shortest path between two spaces in a list of space pairs.
+
+    Parameters
+    ----------
+    space_pairs : list of tuples
+        List of tuples where each tuple contains two spaces of the form (from, to).
+    start : str
+        The starting space.
+    end : str
+        The ending space.
+
+    Returns
+    -------
+    list
+        List of indices that represent the shortest path between the two spaces.
+
+    Raises
+    ------
+    ValueError
+        If no path exists between the two spaces.
+
+    Examples
+    --------
+    >>> space_pairs = [("a", "b"), ("a", "c"), ("b", "d"), ("c", "d")]
+    >>> find_shortest_path(space_pairs, "a", "d")
+    [0, 2]
+    """
+    from collections import deque
+
+    # Create a graph from the space pairs and keep track of indices
+    graph = {}
+    index_map = {}
+    for index, (src, dst) in enumerate(space_pairs):
+        if src not in graph:
+            graph[src] = []
+        graph[src].append(dst)
+        if src not in index_map:
+            index_map[src] = []
+        index_map[src].append(index)
+
+    # Perform BFS to find the shortest path
+    queue = deque([(start, [start], [])])
+    visited = set()
+
+    while queue:
+        current, path, indices = queue.popleft()
+        if current == end:
+            return indices
+        if current not in visited:
+            visited.add(current)
+            for neighbor, idx in zip(
+                graph.get(current, []), index_map.get(current, []), strict=False
+            ):
+                queue.append((neighbor, path + [neighbor], indices + [idx]))
+
+    raise ValueError(f'No path exists between {start} and {end}')
+
+
+def get_transforms(source, target, local_transforms=None):
+    """Get the transforms required to go from source to target space.
+
+    Parameters
+    ----------
+    source : str
+        The source space.
+    target : str
+        The target space.
+    local_transforms : list of str, optional
+        List of local transforms to consider.
+
+    Returns
+    -------
+    selected_transforms : list of str
+        List of selected transforms to go from source to target space.
+    selected_inversions : list of bool
+        List of booleans indicating whether the corresponding transform should be inverted.
+
+    Raises
+    ------
+    ValueError
+        If no chain of transforms can link the source and target spaces.
+    """
+    from pathlib import Path
+
+    import templateflow.api as tflow
+    from bids.layout import Entity, parse_file_entities
+
+    from fmripost_template.utils.utils import find_shortest_path, templateflow_get
+
+    query = [
+        Entity('template', 'tpl-([a-zA-Z0-9+]+)'),
+        Entity('from', 'from-([a-zA-Z0-9+]+)'),
+        Entity('to', 'to-([a-zA-Z0-9+]+)'),
+    ]
+
+    all_transforms = local_transforms or []
+
+    templates = tflow.get_templates()
+    tfl_transforms = []
+    for template in templates:
+        template_transforms = tflow.ls(template, suffix='xfm', extension='h5')
+        if not isinstance(template_transforms, list):
+            template_transforms = [template_transforms]
+        tfl_transforms += template_transforms
+
+    all_transforms += tfl_transforms
+    links = []
+    for transform in all_transforms:
+        entities = parse_file_entities(transform, entities=query)
+        if 'template' in entities:
+            link = (entities['from'], entities['template'])
+        else:
+            link = (entities['from'], entities['to'])
+        links.append(link)
+
+    inversions = [False] * len(all_transforms)
+
+    # Add inverses of all templateflow transforms (local transforms might not be invertible)
+    for transform in tfl_transforms:
+        entities = parse_file_entities(transform, entities=query)
+        if 'template' in entities:
+            links.append((entities['template'], entities['from']))
+        else:
+            links.append((entities['to'], entities['from']))
+        inversions.append(True)
+
+    path = None
+    try:
+        path = find_shortest_path(links, source, target)
+        print('Shortest path:', path)
+    except ValueError as e:
+        raise ValueError(f'Failed to find a path from {source} to {target}') from e
+
+    selected_transforms = [all_transforms[i] for i in path]
+    selected_inversions = [inversions[i] for i in path]
+
+    for selected_transform in selected_transforms:
+        if 'templateflow' in selected_transform:
+            templateflow_get(Path(selected_transform))
+
+    return selected_transforms, selected_inversions
+
+
+def templateflow_get(filepath):
+    """Get a file from templateflow.
+
+    Derived from https://github.com/templateflow/python-client/
+    blob/9be9c3162a54e6c3dff3c544204ff4eb119df1c8/templateflow/api.py#L162-L172
+
+    Parameters
+    ----------
+    filepath : pathlib.Path
+        The path to the file to get.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file is not found in DataLad or S3.
+    """
+    import templateflow.api as tflow
+
+    # Try DataLad first
+    dl_missing = not filepath.isfile()
+    if dl_missing:
+        tflow._datalad_get(filepath)
+        dl_missing.remove(filepath)
+
+    # Fall-back to S3 if some files are still missing
+    s3_missing = filepath.is_file() and filepath.stat().st_size == 0
+    if s3_missing:
+        tflow._s3_get(filepath)
+
+    not_fetched = not filepath.is_file() or filepath.stat().st_size == 0
+    if not_fetched:
+        raise FileNotFoundError(f'Failed to fetch {filepath}')
