@@ -24,4 +24,4 @@
 
 from . import bids, utils
 
-__all__ = ['bids', 'utils']
+__all__ = ['bids', 'utils', 'resampling']
